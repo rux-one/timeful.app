@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,13 +22,22 @@ var FoldersCollection *mongo.Collection
 var FolderEventsCollection *mongo.Collection
 
 func Init() func() {
+	// Get MongoDB URI from environment variable, fallback to localhost for local development
+	mongoURI := os.Getenv("MONGODB_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost"
+		logger.StdErr.Println("Warning: MONGODB_URI not set, using default: mongodb://localhost")
+	}
+
 	// Establish mongodb connection
 	var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	Client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost"))
+	Client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 	if err != nil {
 		logger.StdErr.Panicln(err)
 	}
+
+	logger.StdErr.Printf("Connected to MongoDB at: %s\n", mongoURI)
 
 	// Define mongodb database + collections
 	Db = Client.Database("schej-it")

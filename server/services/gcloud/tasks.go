@@ -27,18 +27,35 @@ func InitTasks() func() {
 	var err error
 	credsFile := os.Getenv("SERVICE_ACCOUNT_KEY_PATH")
 
+	// If no credentials file is set, skip initialization
+	if credsFile == "" {
+		logger.StdErr.Println("Warning: SERVICE_ACCOUNT_KEY_PATH not set, Google Cloud Tasks disabled")
+		return func() {} // Return empty cleanup function
+	}
+
 	TasksClient, err = cloudtasks.NewClient(ctx, option.WithCredentialsFile(credsFile))
 	if err != nil {
-		logger.StdErr.Panicln(err)
+		logger.StdErr.Printf("Warning: Failed to initialize Google Cloud Tasks: %v\n", err)
+		return func() {} // Return empty cleanup function
 	}
+
+	logger.StdErr.Println("Google Cloud Tasks initialized successfully")
 
 	// Return function to close client
 	return func() {
-		TasksClient.Close()
+		if TasksClient != nil {
+			TasksClient.Close()
+		}
 	}
 }
 
 func CreateEmailTask(email string, ownerName string, eventName string, eventId string) []string {
+	// If TasksClient is not initialized, skip task creation
+	if TasksClient == nil {
+		logger.StdErr.Println("Warning: Google Cloud Tasks not initialized, skipping email task creation")
+		return []string{}
+	}
+
 	// Get listmonk url env vars
 	listmonkUrl := os.Getenv("LISTMONK_URL")
 	listmonkUsername := os.Getenv("LISTMONK_USERNAME")
@@ -127,6 +144,12 @@ func CreateEmailTask(email string, ownerName string, eventName string, eventId s
 }
 
 func DeleteEmailTask(taskId string) {
+	// If TasksClient is not initialized, skip task deletion
+	if TasksClient == nil {
+		logger.StdErr.Println("Warning: Google Cloud Tasks not initialized, skipping email task deletion")
+		return
+	}
+
 	err := TasksClient.DeleteTask(context.Background(), &cloudtaskspb.DeleteTaskRequest{
 		Name: taskId,
 	})

@@ -48,9 +48,6 @@ COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 # Copy built Go binary from go-builder stage
 COPY --from=go-builder /app/server/server ./server
 
-# Copy static files if they exist
-COPY --from=go-builder /app/server/static ./static
-
 # Create logs directory
 RUN mkdir -p logs && chown -R appuser:appgroup /app
 
