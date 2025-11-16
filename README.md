@@ -42,4 +42,8 @@ Built with [Vue 2](https://github.com/vuejs/vue), [MongoDB](https://github.com/m
 
 ## Self-hosting
 
-Coming soon...
+```bash
+cp env-example .env
+# populate your environment setup
+docker compose up
+```
